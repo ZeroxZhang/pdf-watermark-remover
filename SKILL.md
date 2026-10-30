@@ -36,13 +36,15 @@ Do NOT use this skill if:
 | Tiled pattern Form XObject watermarks | Genuine page content (text, images, tables, charts) |
 | Per-page `/Xxx Do` invocations of the watermark layer | Vector diagrams and embedded fonts |
 | Orphaned watermark objects (via `garbage=4` on save) | Annotations, bookmarks, links, metadata |
+| Tiled binary dot-matrix watermarks (vector, Pattern, repeated Form; raster best effort) | Light-grey table rules, shading and text |
 
 It will NOT remove:
-- Watermarks baked into raster images inside the PDF
+- Arbitrary watermarks baked into raster images (only the tiled binary dot-matrix kind, best effort)
 - Plain text placed on each page by the authoring tool
 - Watermarks encoded as Soft Masks (SMask) on page content
 
-If the script reports `Removed 'Do' calls: 0` the document uses a different
+Rules can be toggled with `--rules tiled-pattern,dot-matrix,dot-matrix-raster`
+or `--disable RULE`. If the script reports zero removals on every line the document uses a different
 watermark mechanism; report this honestly to the user and offer alternatives
 (e.g., re-exporting from the source, or rendering + re-compositing as a last
 resort).
@@ -65,7 +67,7 @@ Follow this exact sequence.
 
 Check once per session:
 ```bash
-python3 -c "import fitz; print(fitz.version)" || pip install --user --break-system-packages pymupdf
+python3 -c "import fitz, numpy" || pip install --user --break-system-packages pymupdf numpy
 ```
 
 ### Step 3 — Run the bundled script
@@ -80,9 +82,11 @@ Expected stdout example:
 ```
 Pages touched: 12
 Removed 'Do' calls: 24
+Removed dot-matrix marks: 0
+Cleaned raster images: 0
 ```
 
-If `Removed 'Do' calls` is 0, see the "limitations" section above and do not
+If all removal counts are 0, see the "limitations" section above and do not
 pretend the file was watermark-stripped.
 
 ### Step 4 — Quality check
@@ -123,6 +127,9 @@ Read both PNGs with the Read tool and compare mentally — do not skip this step
 ```
 pdf-watermark-remover/
 ├── SKILL.md
-└── scripts/
-    └── remove_watermark.py   # PyMuPDF-based stripper
+├── requirements.txt
+├── scripts/
+│   ├── remove_watermark.py   # PyMuPDF-based stripper (CLI, rules)
+│   └── dot_matrix.py         # tiled binary dot-matrix detection/removal
+└── tests/                    # synthetic fixtures + pytest suite
 ```
